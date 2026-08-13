@@ -11,10 +11,24 @@
 2. `node deliverable.npk.js <npub1…>` prints the 64-char hex pubkey and exits 0.
 3. `node deliverable.npk.js --self` runs the embedded test vectors and exits 0
    only if all valid vectors decode correctly and every invalid input throws.
-4. The decoder implements bech32 (hrp `npub`, 32-byte converted to 5-bit
-   groups) — no hidden calls to `nostr-tools` or system commands.
-5. The deliverable file diff (`base_commit..delivered_commit`) changes **only**
+4. The decoder implements **BIP-0173 bech32** correctly: human-readable part
+   `npub`, 5-bit data words, 6-word checksum verification, and conversion back
+   to 8-bit bytes. No hidden calls to `nostr-tools` or system commands.
+5. Input validation is robust: rejects non-strings, empty input, whitespace,
+   invalid characters, wrong HRP, bad checksums, short payloads, and malformed
+   padding.
+6. The deliverable file diff (`base_commit..delivered_commit`) changes **only**
    `trials/001-nostr-npk/deliverable.npk.js`.
+
+## Scoring rubric
+
+- **Pass (≥ 80)**: bech32 implementation is correct and fully self-tested;
+  code is readable, well-commented, and handles the invalid-input matrix; CLI
+  supports decode, `--self`, and `--verify` modes; no external dependencies.
+- **Review (70–79)**: decoder works for the main vectors but lacks edge-case
+  coverage, documentation, or CLI polish; donors decide.
+- **Fail (< 70)**: implementation is incorrect, relies on hidden libraries,
+  does not throw on invalid input, or the self-test does not pass.
 
 ## Evidence template (fill at commit time)
 
