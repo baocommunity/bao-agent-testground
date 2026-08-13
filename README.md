@@ -12,10 +12,15 @@ Nostr snippet it asks for, commit it here, and a live milestone on
 demo sats. The verifier checks the **real commit** (delivered vs base, archive
 sha256, test command) before the donation is approved/dispatched.
 
+On the demo rail these are **plain fundraising goals** — no prediction markets,
+no "Will…" questions, no market odds. Donations pass by **attestation**:
+proof of delivery → short objection window → optimistic resolve YES →
+release.
+
 ## How a trial works
 
 1. **Trial spec**: each `trials/NNN-name/README.md` defines a milestone —
-   a market question, acceptance criteria, and a hard **30-minute** scope.
+   a funding goal, acceptance criteria, and a hard **30-minute** scope.
    The milestone is deliberately tiny (a working snippet of Nostr code,
    dependency-free, self-testable).
 2. **Claim & code**: fork this repo (or push a branch), build the snippet in
@@ -30,10 +35,10 @@ sha256, test command) before the donation is approved/dispatched.
    `github:compare` / `fetch-hash` / `ci-status` and returns a signed verdict
    (kind 38037). **Pass (≥ 80)** → donation approved for dispatch.
    **Review (70–79)** → donors decide. **Fail** → donation withheld.
-6. **Dispatch (demo)**: when the milestone's market resolves YES and the
-   release path is armed with a real escrow token, the recorded payout lands
-   in the builder's payout reference. Until then the release stays
-   fail-closed — that is the design, not a bug.
+6. **Dispatch (demo)**: when the milestone's **attestation resolves YES**
+   (proof submitted, objection window closed with no objection) and the latest
+   verdict is **pass**, the recorded demo release dispatches the donation.
+   Mainnet rails stay fail-closed until a real escrow payout is verified.
 
 ## Rules
 
@@ -63,9 +68,10 @@ workflow_hash:         <sha256 of the trial spec README>
 criteria_hash:         <sha256 of the milestone criteria text>
 ```
 
-See `scripts/trial-run.mjs` in the [bao-fund-next app repo]
+See `scripts/trial-pass.mjs` in the [bao-fund-next app repo]
 (https://github.com/baocommunity/bao-fund-next) for the harness that walks
-create → fund → score → verify → release against the live demo API.
+create → fund → score → submit proof → attestation resolve → release against
+the live demo API.
 
 ## Trials
 
