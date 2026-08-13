@@ -60,7 +60,9 @@ function convertBits(data, from, to, pad) {
  * Decode an npub1… string to its 64-char hex pubkey.
  * Throws with a clear message on malformed input.
  */
-function npubToHex(npub) {
+function npubToHex(input) {
+  let npub = input;
+  npub = String(npub).toLowerCase();
   if (typeof npub !== 'string' || !/^[a-z0-9]+$/.test(npub)) {
     throw new Error('npub must be a lowercase bech32 string');
   }
@@ -80,20 +82,41 @@ function npubToHex(npub) {
 }
 
 // ── self-test vector (fresh throwaway key, generated 2026-08-13) ────────────
-const SELF_VECTOR = [
-  'npub1lm9zfxjydk4c4sa5f3mt7f6h5qeptzkv3du6keasznvxha7jfltqqq4hn5',
-  'feca249a446dab8ac3b44c76bf2757a032158acc8b79ab67b014d86bf7d24fd6',
+const SELF_VECTORS = [
+  ['npub1lm9zfxjydk4c4sa5f3mt7f6h5qeptzkv3du6keasznvxha7jfltqqq4hn5', 'feca249a446dab8ac3b44c76bf2757a032158acc8b79ab67b014d86bf7d24fd6'],
+  ['npub1yzahpmawe2ux779qadqaynrpgjxm29v5n96rf9lj5lj5chvz77kqqd59qy', '20bb70efaecab86f78a0eb41d24c61448db5159499743497f2a7e54c5d82f7ac'],
+  // Uppercase bech32 is valid per BIP-173 — must decode identically.
+  ['NPUB1LM9ZFXJYDK4C4SA5F3MT7F6H5QEPTZKV3DU6KEASZNVXHA7JFLTQQQ4HN5', 'feca249a446dab8ac3b44c76bf2757a032158acc8b79ab67b014d86bf7d24fd6'],
+];
+// Invalid inputs must throw (never silently return garbage).
+const INVALID_INPUTS = [
+  'npub1lm9zfxjydk4c4sa5f3mt7f6h5qeptzkv3du6keasznvxha7jfltqqq4hn4', // bad checksum
+  'nsec1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq', // wrong HRP
+  'npub1qq', // payload too short
+  'npub1LM9ZFXJYDK4C4SA5F3MT7F6H5QEPTZKV3DU6KEASZNVXHA7JFLTQQQ4HN5!', // invalid char
 ];
 
 function main() {
   const arg = process.argv[2];
   if (arg === '--self') {
-    const [npub, want] = SELF_VECTOR;
     try {
-      const got = npubToHex(npub);
-      const ok = got === want;
-      console.log(ok ? `SELF-TEST PASS (${got.slice(0, 12)}…)` : `SELF-TEST FAIL (got ${got})`);
-      process.exit(ok ? 0 : 1);
+      const failures = [];
+      for (const [npub, want] of SELF_VECTORS) {
+        const got = npubToHex(npub);
+        if (got !== want) failures.push(`vector mismatch: got ${got} want ${want}`);
+      }
+      for (const bad of INVALID_INPUTS) {
+        let threw = false;
+        try { npubToHex(bad); } catch { threw = true; }
+        if (!threw) failures.push(`invalid input accepted: ${bad.slice(0, 24)}…`);
+      }
+      if (failures.length) {
+        console.error('SELF-TEST FAIL:'); 
+        for (const f of failures) console.error('  -', f);
+        process.exit(1);
+      }
+      console.log('SELF-TEST PASS (3 vectors + 4 invalid inputs)');
+      process.exit(0);
     } catch (e) {
       console.error('SELF-TEST FAIL:', e.message);
       process.exit(1);
