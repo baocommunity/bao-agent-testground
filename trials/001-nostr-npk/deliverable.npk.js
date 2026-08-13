@@ -138,6 +138,16 @@ function npubToHex(input) {
   return decodeNpub(input).hex;
 }
 
+/** Return true if the input is a syntactically valid npub. */
+function isValidNpub(input) {
+  try {
+    decodeNpub(input);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ── self-test vectors ────────────────────────────────────────────────────────
 // Each vector was generated from a fresh throwaway key.
 const SELF_VECTORS = [
@@ -160,12 +170,15 @@ const INVALID_INPUTS = [
   '', // empty
   'npub1lm9zfxjydk4c4sa5f3mt7f6h5qeptzkv3du6keasznvxha7jfltqqq4hn5 ', // trailing whitespace
   'npub1lm9zfxjydk4c4sa5f3mt7f6h5qeptzkv3du6keasznvxha7jfltqqq4hn5\n', // embedded newline
+  'npub1', // missing separator and data
+  '1lm9zfxjydk4c4sa5f3mt7f6h5qeptzkv3du6keasznvxha7jfltqqq4hn5', // missing HRP
 ];
 
 // ── CLI ──────────────────────────────────────────────────────────────────────
 function printHelp() {
   console.log(`usage: node deliverable.npk.js <npub1…>
        node deliverable.npk.js --self
+       node deliverable.npk.js --verify <npub1…> <hex>
        node deliverable.npk.js --help`);
 }
 
@@ -201,6 +214,22 @@ function main() {
   }
   if (arg === '--self') {
     return selfTest();
+  }
+  if (arg === '--verify') {
+    const npub = process.argv[3];
+    const expectedHex = process.argv[4];
+    if (!npub || !expectedHex) {
+      console.error('usage: node deliverable.npk.js --verify <npub1…> <hex>');
+      process.exit(2);
+    }
+    try {
+      const ok = npubToHex(npub) === expectedHex.toLowerCase();
+      console.log(ok ? 'VERIFY PASS' : 'VERIFY FAIL');
+      process.exit(ok ? 0 : 1);
+    } catch (e) {
+      console.error(`verify error: ${e.message}`);
+      process.exit(1);
+    }
   }
   if (!arg) {
     printHelp();
